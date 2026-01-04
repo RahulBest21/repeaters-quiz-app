@@ -3,6 +3,8 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+# NOTE: Named 'database.py' per instructions to ensure auth.py imports work correctly.
+
 def get_client():
     try:
         if "gcp_service_account" not in st.secrets: return None
