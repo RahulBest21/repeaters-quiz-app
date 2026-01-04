@@ -1,8 +1,9 @@
 import streamlit as st
 import time
+import pandas as pd
+import plotly.express as px # Added for leaderboard
 from database import get_data, save_to_sheet
 from utils import get_ist, reset_module_state
-# CHANGED: Removed 'modules.' prefix
 from ui_components import render_header, render_palette, render_action_bar
 
 def setup_gk():
@@ -51,7 +52,7 @@ def render_gk_quiz():
         st.markdown("""
         <div style='background-color: #f9f9f9; padding: 10px; border-radius: 5px; border-left: 4px solid #5cb85c; margin-bottom: 20px;'>
             <small style='color: #666; font-style: italic; font-weight: 600;'>
-            Questions framed and solutions by Anil Yadav
+            Questions framed and solutions by anil yadav
             </small>
         </div>
         """, unsafe_allow_html=True)
@@ -98,19 +99,72 @@ def render_gk_scorecard():
         if str(u_ans) == c_ans: score += 1
         else: sols.append(f"**Q{i+1}: {q['Question']}**<br>You: {u_ans if u_ans else 'Skipped'} | Correct: {c_ans}<br><i>{q.get('Solution','')}</i>")
     
-    c1, c2 = st.columns(2)
-    with c1: st.metric("Score", f"{score}/{total}")
-    with c2: st.metric("Time", f"{duration}s")
-    
-    st.subheader("Detailed Solutions")
-    if not sols: st.success("🎉 Perfect Score!")
-    for s in sols: st.markdown(f"<div class='solution-box'>{s}</div>", unsafe_allow_html=True)
-    
+    # Save first
     if 'saved' not in st.session_state:
         ist_date, ist_time = get_ist()
         save_to_sheet("Scores", [ist_date, ist_time, st.session_state['name'], st.session_state['mobile'], "-", "GK", "-", "-", "-", "-", score, duration, st.session_state['user'], st.session_state['gk_id']])
         st.session_state['saved'] = True
 
+    c1, c2 = st.columns(2)
+    with c1: st.metric("Score", f"{score}/{total}")
+    with c2: st.metric("Time", f"{duration}s")
+    
+    st.markdown("---")
+    
+    # --- TABS: Solutions & Leaderboard ---
+    t1, t2 = st.tabs(["💡 Detailed Solutions", "🏆 Leaderboard & Analysis"])
+    
+    with t1:
+        if not sols: st.success("🎉 Perfect Score!")
+        for s in sols: st.markdown(f"<div class='solution-box'>{s}</div>", unsafe_allow_html=True)
+    
+    with t2:
+        # Fetch fresh data to show live leaderboard
+        df_scores = get_data("Scores")
+        if not df_scores.empty and len(df_scores.columns) >= 14:
+            # Filter for current GK Topic (Quiz ID)
+            current_quiz_id = st.session_state['gk_id']
+            # Using 'Topic' column (13th index usually, but matched by name in dashboard fix)
+            # Assuming 'Topic' exists as per dashboard fix
+            if 'Topic' in df_scores.columns:
+                 quiz_scores = df_scores[df_scores['Topic'] == current_quiz_id].copy()
+            else:
+                 # Fallback if column naming varies
+                 quiz_scores = df_scores[df_scores['Quiz_ID'] == current_quiz_id].copy() if 'Quiz_ID' in df_scores.columns else df_scores
+                 
+            quiz_scores['Total'] = pd.to_numeric(quiz_scores['Total'], errors='coerce').fillna(0)
+            
+            # 1. Percentile Logic
+            user_score = score
+            topper_score = quiz_scores['Total'].max()
+            total_participants = len(quiz_scores)
+            
+            if total_participants > 0:
+                participants_below = len(quiz_scores[quiz_scores['Total'] < user_score])
+                percentile = (participants_below / total_participants) * 100
+            else:
+                percentile = 100.0
+                
+            c_a, c_b = st.columns(2)
+            with c_a:
+                st.metric("Your Percentile", f"{percentile:.1f}%")
+                st.metric("Topper Score", int(topper_score) if not pd.isna(topper_score) else 0)
+            
+            with c_b:
+                # 2. Comparison Graph
+                fig = px.histogram(quiz_scores, x="Total", nbins=15, title="Score Distribution", color_discrete_sequence=['#5bc0de'])
+                fig.add_vline(x=user_score, line_width=3, line_dash="dash", line_color="green", annotation_text="You")
+                fig.add_vline(x=topper_score, line_width=3, line_dash="dash", line_color="red", annotation_text="Topper")
+                st.plotly_chart(fig, use_container_width=True)
+                
+            # 3. Leaderboard Table
+            st.subheader("Top Performers")
+            leaderboard = quiz_scores[['Name', 'Total', 'Duration']].sort_values(by='Total', ascending=False).head(10).reset_index(drop=True)
+            st.dataframe(leaderboard, use_container_width=True)
+        else:
+            st.info("Leaderboard data updating...")
+
+    st.markdown("---")
     if st.button("Back to Dashboard"):
         reset_module_state()
         st.rerun()
