@@ -60,10 +60,13 @@ def format_detailed_solution(label, r, c, val, correct, op):
     except:
         step = "Calculation error"
     
+    # FIX: Logic to show 'Skipped' instead of 'nan' or 'None'
+    display_val = val if (val and val not in ['None', 'nan', '']) else "<span style='color:orange'>Skipped</span>"
+
     return f"""
     <div class='solution-box'>
         <span class='solution-header'>{label} [Row: {r}, Col: {c}]</span><br>
-        Your Answer: <b>{val}</b> | Correct Answer: <b style='color:green'>{correct}</b><br>
+        Your Answer: <b>{display_val}</b> | Correct Answer: <b style='color:green'>{correct}</b><br>
         <span style='color:#555; font-style:italic;'>Step-by-step: {step}</span>
     </div>
     """
@@ -125,11 +128,14 @@ def grade_math(user_df, op, label, h=None):
                 if is_correct: 
                     score += 1
                 else: 
+                    # FIX: Logic to show 'Skipped' instead of 'nan' or 'None'
+                    display_val = val if (val and val not in ['None', 'nan', '']) else "<span style='color:orange'>Skipped</span>"
+                    
                     if op == 'succ':
                         sol_html = f"""
                         <div class='solution-box'>
                             <span class='solution-header'>{label} [Row: {r}, Col: {c}]</span><br>
-                            Your Answer: <b>{val}</b> | Correct Answer: <b style='color:green'>{correct}</b><br>
+                            Your Answer: <b>{display_val}</b> | Correct Answer: <b style='color:green'>{correct}</b><br>
                             <span style='color:#555; font-style:italic;'>Logic: {step_desc}</span>
                         </div>
                         """
@@ -209,7 +215,7 @@ def render_math_scorecard():
     ws = st.session_state['worksheet']
     
     # FIX: Safe duration calculation to prevent KeyError
-    # This was the exact line causing your crash
+    # This prevents the app from crashing if end_time is missing
     end_t = st.session_state.get('end_time', time.time())
     start_t = st.session_state.get('start_time', end_t)
     duration = round(end_t - start_t, 2)
