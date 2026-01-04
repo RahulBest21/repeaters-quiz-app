@@ -1,109 +1,90 @@
 import streamlit as st
+import time
 
-# Defined locally to avoid import errors or circular dependencies with utils.py
-def _force_day_mode():
-    st.markdown("""
-        <style>
-            /* 1. Global Background & Text - Force White Theme */
-            .stApp {
-                background-color: #ffffff !important;
-                color: #000000 !important;
-            }
-            
-            /* 2. Sidebar */
-            [data-testid="stSidebar"] {
-                background-color: #f8f9fa !important;
-                border-right: 1px solid #e0e0e0;
-            }
-            [data-testid="stSidebar"] * {
-                color: #000000 !important;
-            }
-
-            /* 3. Inputs (Text, Number, Date) */
-            input, textarea, select, .stTextInput > div > div > input, .stNumberInput > div > div > input {
-                color: #000000 !important;
-                background-color: #ffffff !important;
-                border: 1px solid #cccccc !important;
-            }
-            /* Input Labels */
-            label, .stTextInput label, .stNumberInput label {
-                color: #222222 !important;
-                font-weight: 600 !important;
-            }
-
-            /* 4. Headers & Markdown */
-            h1, h2, h3, h4, h5, h6, p, li, span, div {
-                color: #000000 !important;
-            }
-            
-            /* 5. Metrics */
-            [data-testid="stMetricValue"] {
-                color: #000000 !important;
-            }
-            [data-testid="stMetricLabel"] {
-                color: #555555 !important;
-            }
-            
-            /* 6. Tables/Dataframes */
-            div[data-testid="stDataFrame"] *, div[data-testid="stDataEditor"] * {
-                color: #000000 !important;
-                background-color: #ffffff !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-def render_header(title):
-    """
-    Renders the consistent header for the application.
-    Injects the global CSS theme to ensure Day Mode is active on every page.
-    """
-    _force_day_mode()  # Apply theme directly from this file
-    
+def render_header(module_name):
+    start_ts = st.session_state.get('start_time', time.time())
     st.markdown(f"""
-    <div style="background-color:#ffffff; padding:10px; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px;">
-        <h1 style="color:#000000; margin:0; font-size: 2rem;">{title}</h1>
+    <div class='test-header'>
+        <div class='test-title'>CGL 2025 T-2 Live Mock - {module_name}</div>
+        <div class='timer-box'>⏳ <span id='timer_val'>00:00</span></div>
     </div>
+    <script>
+    setInterval(function(){{
+        var e = Math.floor((Date.now()/1000)-{start_ts});
+        var m = Math.floor(e/60); var s = e%60;
+        if(s<10) s='0'+s;
+        if(m<10) m='0'+m;
+        var el = window.parent.document.getElementById('timer_val');
+        if(el) el.innerHTML = m+':'+s;
+    }}, 1000);
+    </script>
     """, unsafe_allow_html=True)
 
 def render_palette(total_q, current_idx):
-    st.markdown("#### Question Palette")
-    cols = st.columns(4)
-    q_status = st.session_state.get('q_status', {})
+    st.markdown("**Section Analysis**")
+    st.markdown("""<div style='margin-bottom:10px; font-size: 0.8em;'>
+        <span class='legend-box' style='background:#5cb85c; display:inline-block;'></span> Answered
+        <span class='legend-box' style='background:#d9534f; display:inline-block;'></span> Not Ans
+        <span class='legend-box' style='background:#fff; display:inline-block;'></span> Unvisited
+        <span class='legend-box' style='background:#5bc0de; display:inline-block;'></span> Review
+    </div>""", unsafe_allow_html=True)
+    st.markdown("---")
     
-    for i in range(total_q):
-        status = q_status.get(i, 'not_visited')
-        color = "#e0e0e0" # Default grey
-        text_color = "black"
-        
-        if i == current_idx:
-            color = "#007bff" # Blue for current
-            text_color = "white"
-        elif status == 'answered':
-            color = "#28a745" # Green
-            text_color = "white"
-        elif status == 'not_answered':
-            color = "#dc3545" # Red
-            text_color = "white"
-            
-        if cols[i % 4].button(str(i+1), key=f"q_nav_{i}", help=f"Go to Q{i+1}"):
-            st.session_state['current_q_index'] = i
+    # Custom Grid CSS for buttons
+    cols = 4
+    rows = (total_q + cols - 1) // cols
+    
+    for r in range(rows):
+        c = st.columns(cols)
+        for i in range(cols):
+            q_idx = r * cols + i
+            if q_idx < total_q:
+                s = st.session_state['q_status'].get(q_idx, 'not_visited')
+                
+                # Determine visual label
+                if s == 'answered': emoji = "✅"
+                elif s == 'not_answered': emoji = "🟥"
+                elif s == 'review': emoji = "🟣"
+                else: emoji = "⬜"
+                
+                label = f"{q_idx+1} {emoji}"
+                if q_idx == current_idx: label = f"▶ {q_idx+1}"
+                
+                if c[i].button(label, key=f"nav_{q_idx}", use_container_width=True):
+                    st.session_state['current_q_index'] = q_idx
+                    st.rerun()
+
+def render_action_bar(current_idx, total_q, module_type):
+    st.markdown("<div class='action-bar'>", unsafe_allow_html=True)
+    b1, b2, b3, b4 = st.columns(4)
+    
+    if b1.button("⬅ Previous"):
+        if current_idx > 0: 
+            st.session_state['current_q_index'] -= 1
             st.rerun()
             
-        # Styling hack for buttons isn't perfect in Streamlit, 
-        # so we rely on the state update above.
-        pass
+    if b2.button("Mark Review"):
+        st.session_state['q_status'][current_idx] = 'review'
+        if current_idx < total_q - 1: st.session_state['current_q_index'] += 1
+        st.rerun()
+        
+    if b3.button("Save & Next", type="primary"):
+        # Check if actually answered
+        is_answered = False
+        if module_type == 'GK':
+            if st.session_state['answers_store'].get(current_idx): is_answered = True
+        elif module_type == 'MATH':
+             # Math is considered answered if viewed/edited (simplification for DataFrame editing)
+             # Ideally check if DF is empty, but for speed we assume 'Saved' means committed
+             is_answered = True
 
-def render_action_bar(current_idx, total_q, module_name):
-    c1, c2, c3 = st.columns([1, 2, 1])
-    
-    with c1:
-        if current_idx > 0:
-            if st.button("⬅️ Previous"):
-                st.session_state['current_q_index'] -= 1
-                st.rerun()
-                
-    with c3:
-        if current_idx < total_q - 1:
-            if st.button("Next ➡️"):
-                st.session_state['current_q_index'] += 1
-                st.rerun()
+        st.session_state['q_status'][current_idx] = 'answered' if is_answered else 'not_answered'
+        
+        if current_idx < total_q - 1: st.session_state['current_q_index'] += 1
+        st.rerun()
+        
+    if b4.button("Clear"):
+        if module_type == 'GK': st.session_state['answers_store'][current_idx] = None
+        st.session_state['q_status'][current_idx] = 'not_answered'
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
