@@ -15,6 +15,23 @@ def reset_module_state():
     st.session_state['current_q_index'] = 0
     st.session_state['answers_store'] = {}
 
+def init_session_state():
+    """Initialize session state variables if they don't exist."""
+    defaults = {
+        'page': 'login',
+        'authenticated': False,
+        'name': '',
+        'mobile': '',
+        'user': '',
+        'worksheet': None,
+        'q_status': {},
+        'current_q_index': 0,
+        'answers_store': {}
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
 # --- GLOBAL THEME FIX ---
 def inject_custom_css():
     st.markdown("""
