@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import time
 import plotly.express as px  # Added for leaderboard graphs
-from utils import save_to_sheet, get_ist, reset_module_state
-from database import get_data
+from utils import get_ist, reset_module_state
+from database import get_data, save_to_sheet
 from ui_components import render_header, render_palette, render_action_bar
 
 def init_math_worksheet():
