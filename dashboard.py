@@ -55,6 +55,10 @@ def render_dashboard():
     # Filter for current user
     user_scores = df_scores[df_scores['Username'] == str(st.session_state['user'])]
     
+    # FIX: Explicitly remove "Skipped" topics from analysis to prevent empty graphs
+    if 'Topic' in user_scores.columns:
+        user_scores = user_scores[user_scores['Topic'] != 'Skipped']
+    
     if user_scores.empty:
         st.info("You haven't taken any tests yet.")
         return
@@ -69,7 +73,7 @@ def render_dashboard():
             user_scores['Total'] = pd.to_numeric(user_scores['Total'], errors='coerce').fillna(0)
             user_scores['Date'] = pd.to_datetime(user_scores['Date'])
             
-            # FIXED: Changed 'Quiz_ID' to 'Topic' to match your Google Sheet headers
+            # Use 'Topic' column
             fig = px.line(user_scores, x='Date', y='Total', color='Topic', markers=True, 
                           title="Your Score Progression over Time")
             st.plotly_chart(fig, use_container_width=True)
@@ -90,14 +94,15 @@ def render_dashboard():
         # Percentile Calculation per Quiz Type
         latest_test = user_scores.iloc[-1]
         
-        # FIXED: Changed 'Quiz_ID' to 'Topic'
         # Handle case where Topic might be missing
         if 'Topic' in latest_test:
             quiz_id = latest_test['Topic']
             
-            # Get all scores for this specific quiz type
-            # FIXED: Changed 'Quiz_ID' to 'Topic'
+            # Get all scores for this specific quiz type (excluding Skipped globally)
             all_quiz_scores = df_scores[df_scores['Topic'] == quiz_id].copy()
+            # Ensure we filter out Skipped here too just in case
+            all_quiz_scores = all_quiz_scores[all_quiz_scores['Topic'] != 'Skipped']
+            
             all_quiz_scores['Total'] = pd.to_numeric(all_quiz_scores['Total'], errors='coerce').fillna(0)
             
             user_score = float(latest_test['Total'])
