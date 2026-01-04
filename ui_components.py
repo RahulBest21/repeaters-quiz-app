@@ -1,12 +1,63 @@
 import streamlit as st
-from utils import inject_custom_css
+
+# Defined locally to avoid import errors or circular dependencies with utils.py
+def _force_day_mode():
+    st.markdown("""
+        <style>
+            /* 1. Global Background & Text - Force White Theme */
+            .stApp {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            
+            /* 2. Sidebar */
+            [data-testid="stSidebar"] {
+                background-color: #f8f9fa !important;
+                border-right: 1px solid #e0e0e0;
+            }
+            [data-testid="stSidebar"] * {
+                color: #000000 !important;
+            }
+
+            /* 3. Inputs (Text, Number, Date) */
+            input, textarea, select, .stTextInput > div > div > input, .stNumberInput > div > div > input {
+                color: #000000 !important;
+                background-color: #ffffff !important;
+                border: 1px solid #cccccc !important;
+            }
+            /* Input Labels */
+            label, .stTextInput label, .stNumberInput label {
+                color: #222222 !important;
+                font-weight: 600 !important;
+            }
+
+            /* 4. Headers & Markdown */
+            h1, h2, h3, h4, h5, h6, p, li, span, div {
+                color: #000000 !important;
+            }
+            
+            /* 5. Metrics */
+            [data-testid="stMetricValue"] {
+                color: #000000 !important;
+            }
+            [data-testid="stMetricLabel"] {
+                color: #555555 !important;
+            }
+            
+            /* 6. Tables/Dataframes */
+            div[data-testid="stDataFrame"] *, div[data-testid="stDataEditor"] * {
+                color: #000000 !important;
+                background-color: #ffffff !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
 def render_header(title):
     """
     Renders the consistent header for the application.
     Injects the global CSS theme to ensure Day Mode is active on every page.
     """
-    inject_custom_css()  # <--- FIX: Applies theme to every page using this header
+    _force_day_mode()  # Apply theme directly from this file
     
     st.markdown(f"""
     <div style="background-color:#ffffff; padding:10px; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px;">
@@ -40,7 +91,6 @@ def render_palette(total_q, current_idx):
             
         # Styling hack for buttons isn't perfect in Streamlit, 
         # so we rely on the state update above.
-        # This is a visual indicator using markdown if buttons fail to style
         pass
 
 def render_action_bar(current_idx, total_q, module_name):
