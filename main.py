@@ -1,10 +1,11 @@
 import streamlit as st
 from styles import load_css
 from utils import init_session_state
-from modules.auth import render_auth
-from modules.dashboard import render_dashboard
-from modules.quiz_math import render_math_quiz, render_math_scorecard
-from modules.quiz_gk import render_gk_quiz, render_gk_scorecard
+# CHANGED: Removed 'modules.' prefix
+from auth import render_auth
+from dashboard import render_dashboard
+from quiz_math import render_math_quiz, render_math_scorecard
+from quiz_gk import render_gk_quiz, render_gk_scorecard
 
 # 1. Config
 st.set_page_config(page_title="The Repeaters Official", page_icon="🔐", layout="wide")
