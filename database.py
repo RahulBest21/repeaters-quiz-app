@@ -21,10 +21,16 @@ def get_data(worksheet_name):
         try: 
             if worksheet_name == "Scores":
                 raw_data = client.open("Repeaters_Database").worksheet(worksheet_name).get_all_values()
-                if len(raw_data) > 1: return pd.DataFrame(raw_data[1:], columns=raw_data[0])
+                if len(raw_data) > 1: 
+                    df = pd.DataFrame(raw_data[1:], columns=raw_data[0])
+                    # FIX: Replace empty strings and NaNs with "Skipped" for better UI
+                    return df.replace(r'^\s*$', 'Skipped', regex=True).fillna("Skipped")
                 return pd.DataFrame()
             else:
-                return pd.DataFrame(client.open("Repeaters_Database").worksheet(worksheet_name).get_all_records())
+                data = client.open("Repeaters_Database").worksheet(worksheet_name).get_all_records()
+                df = pd.DataFrame(data)
+                # FIX: Replace empty strings and NaNs with "Skipped"
+                return df.replace(r'^\s*$', 'Skipped', regex=True).fillna("Skipped")
         except: pass
     
     # Fallback for GK Questions if DB fails or is empty for testing
