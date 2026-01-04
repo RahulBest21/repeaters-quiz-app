@@ -197,8 +197,22 @@ def render_math_scorecard():
         </div>
     """, unsafe_allow_html=True)
     
+    # FIX: Safety check for worksheet existence
+    if st.session_state.get('worksheet') is None:
+        st.error("No test data found. Please start a new test.")
+        if st.button("Go to Dashboard"):
+            reset_module_state()
+            st.session_state['page'] = 'dashboard'
+            st.rerun()
+        return
+
     ws = st.session_state['worksheet']
-    duration = round(st.session_state['end_time'] - st.session_state['start_time'], 2)
+    
+    # FIX: Safe duration calculation to prevent KeyError
+    # This was the exact line causing your crash
+    end_t = st.session_state.get('end_time', time.time())
+    start_t = st.session_state.get('start_time', end_t)
+    duration = round(end_t - start_t, 2)
     
     s_total, t_total = 0, 0
     all_sols = []
@@ -259,4 +273,5 @@ def render_math_scorecard():
     st.markdown("---")
     if st.button("Back to Dashboard"):
         reset_module_state()
+        st.session_state['page'] = 'dashboard'
         st.rerun()
