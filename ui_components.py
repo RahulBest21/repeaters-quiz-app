@@ -168,8 +168,8 @@ def render_header(module_name):
     _inject_css() # Apply styles robustly
     start_ts = st.session_state.get('start_time', time.time())
     
-    # HTML Header with JS Timer
-    st.markdown(f"""
+    # HTML Header
+    header_html = f"""
     <div class='test-header'>
         <div class='test-title'>CGL 2025 Live Mock • {module_name}</div>
         <div class='timer-group'>
@@ -181,11 +181,17 @@ def render_header(module_name):
             </div>
         </div>
     </div>
+    """
+    
+    # FIX: Use .replace() for JS injection. 
+    # This prevents Python f-strings from trying to parse the {{ }} in the JS code
+    # and causing the "}" error to appear on screen.
+    js_logic = """
     <script>
-    function updateTimers() {{
+    function updateTimers() {
         // 1. Update Elapsed Timer
         var now = Math.floor(Date.now() / 1000);
-        var start = {start_ts};
+        var start = START_TIMESTAMP;
         var diff = now - start;
         
         var m = Math.floor(diff / 60);
@@ -213,18 +219,18 @@ def render_header(module_name):
         var timerEl = document.getElementById('timer_val');
         var clockEl = document.getElementById('clock_val');
         
-        if(timerEl) {{
+        if(timerEl) {
             timerEl.innerHTML = timerString;
             clockEl.innerHTML = clockString;
-        }} else if (window.parent) {{
-            try {{
+        } else if (window.parent) {
+            try {
                 var parentTimer = window.parent.document.getElementById('timer_val');
                 var parentClock = window.parent.document.getElementById('clock_val');
                 if(parentTimer) parentTimer.innerHTML = timerString;
                 if(parentClock) parentClock.innerHTML = clockString;
-            }} catch(e) {{}}
-        }}
-    }}
+            } catch(e) {}
+        }
+    }
     
     // Clear any existing intervals to prevent duplicates if re-running
     if (window.myTimerInterval) clearInterval(window.myTimerInterval);
@@ -233,7 +239,9 @@ def render_header(module_name):
     // Run immediately once
     updateTimers();
     </script>
-    """, unsafe_allow_html=True)
+    """.replace("START_TIMESTAMP", str(start_ts))
+
+    st.markdown(header_html + js_logic, unsafe_allow_html=True)
 
 def render_palette(total_q, current_idx):
     # Palette Container
