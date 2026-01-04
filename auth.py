@@ -3,7 +3,15 @@ from utils import hash_pass, gen_key, gen_captcha
 from database import get_data, save_to_sheet, update_password
 
 def render_auth(logo_html):
-    st.markdown(f"<div style='text-align:center; padding:20px; background:white; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1); width:60%; margin:auto;'>{logo_html}<h1 style='color:#333; margin-top:0;'>The Repeaters Official</h1></div><br>", unsafe_allow_html=True)
+    # BRANDING: Added "Dashboard & Login by RahulBest"
+    st.markdown(f"""
+    <div style='text-align:center; padding:30px; background:white; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.08); width:60%; margin:auto;'>
+        {logo_html}
+        <h1 style='color:#333; margin-bottom: 5px;'>The Repeaters Official</h1>
+        <p style='color:#666; font-size: 14px; font-weight: 500; margin-top: 0;'>✨ Dashboard & Login Interface by <b>RahulBest</b></p>
+    </div>
+    <br>
+    """, unsafe_allow_html=True)
     
     t1, t2, t3 = st.tabs(["🔐 Login", "📝 Register", "🆘 Reset"])
     
