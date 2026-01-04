@@ -23,13 +23,24 @@ def get_data(worksheet_name):
                 raw_data = client.open("Repeaters_Database").worksheet(worksheet_name).get_all_values()
                 if len(raw_data) > 1: 
                     df = pd.DataFrame(raw_data[1:], columns=raw_data[0])
-                    # FIX: Replace empty strings and NaNs with "Skipped" for better UI
+                    
+                    # FIX: Filter out empty rows (ghost rows) first
+                    # We check if 'Username' or 'Total' is effectively empty
+                    if 'Username' in df.columns:
+                        # Remove rows where Username is empty or just whitespace
+                        df = df[df['Username'].astype(str).str.strip() != '']
+                    
+                    # FIX: Replace remaining empty strings/NaNs with "Skipped"
                     return df.replace(r'^\s*$', 'Skipped', regex=True).fillna("Skipped")
                 return pd.DataFrame()
             else:
                 data = client.open("Repeaters_Database").worksheet(worksheet_name).get_all_records()
                 df = pd.DataFrame(data)
-                # FIX: Replace empty strings and NaNs with "Skipped"
+                
+                # FIX: Remove empty rows for other sheets too
+                if not df.empty and 'Subject' in df.columns:
+                     df = df[df['Subject'].astype(str).str.strip() != '']
+
                 return df.replace(r'^\s*$', 'Skipped', regex=True).fillna("Skipped")
         except: pass
     
