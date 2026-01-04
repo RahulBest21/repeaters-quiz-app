@@ -51,7 +51,7 @@ def render_gk_quiz():
         st.markdown("""
         <div style='background-color: #f9f9f9; padding: 10px; border-radius: 5px; border-left: 4px solid #5cb85c; margin-bottom: 20px;'>
             <small style='color: #666; font-style: italic; font-weight: 600;'>
-            Questions framed and solutions by anil yadav
+            Questions framed and solutions by Anil Yadav
             </small>
         </div>
         """, unsafe_allow_html=True)
@@ -114,3 +114,4 @@ def render_gk_scorecard():
     if st.button("Back to Dashboard"):
         reset_module_state()
         st.rerun()
+
