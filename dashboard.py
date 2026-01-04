@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from database import get_data
 from utils import reset_module_state
 
@@ -11,18 +10,28 @@ def render_dashboard():
         st.write(f"👤 **{st.session_state['name']}**")
         st.write(f"📱 {st.session_state['mobile']}")
         st.markdown("---")
+        # BRANDING
+        st.caption("🎨 Dashboard by **RahulBest**")
+        st.markdown("---")
         if st.button("🏠 Home", use_container_width=True):
             st.rerun()
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.clear()
             st.rerun()
 
-    st.markdown(f"## Welcome, {st.session_state['name']}")
+    # Main Header
+    c_head1, c_head2 = st.columns([3, 1])
+    with c_head1:
+        st.title(f"Welcome, {st.session_state['name']}")
+    with c_head2:
+        st.markdown("<div style='text-align:right; color: #888; font-size: 12px;'>Dashboard Engine<br><b>RahulBest</b></div>", unsafe_allow_html=True)
     
+    st.markdown("---")
+
     # --- Action Buttons ---
     c1, c2 = st.columns(2)
     with c1:
-        if st.button("🧮 Start Math Calculation Test", use_container_width=True): 
+        if st.button("🧮 Maths by RahulBest", use_container_width=True): 
             reset_module_state()
             st.session_state.update({'module': 'MATH', 'page': 'quiz'})
             st.rerun()
