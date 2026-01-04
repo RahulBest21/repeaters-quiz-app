@@ -4,7 +4,8 @@ import numpy as np
 import time
 from utils import save_to_sheet, get_ist, reset_module_state
 from database import get_data
-from modules.ui_components import render_header, render_palette, render_action_bar
+# CHANGED: Removed 'modules.' prefix
+from ui_components import render_header, render_palette, render_action_bar
 
 def init_math_worksheet():
     if st.session_state.get('worksheet') is not None: return
@@ -23,7 +24,6 @@ def init_math_worksheet():
             {'id': 5, 'type': 'df', 'title': 'Subtraction Speed', 'data': pd.DataFrame(None, index=rnd(100,999,5), columns=rnd(100,500,5)), 'key': 'sub'}
         ]
     }
-    # Fix for missing columns in Percentage
     if 'Increment % (Value)' not in ws['questions'][3]['data'].columns:
          ws['questions'][3]['data']['Increment % (Value)'] = None
          ws['questions'][3]['data']['Decrement % (Value)'] = None
@@ -61,7 +61,6 @@ def grade_math(user_df, op, label, h=None):
                     for x in p: factor *= (1 + x/100) if is_inc else (1 - x/100)
                     correct = round(100*factor, 2)
                 
-                # Grading
                 val = str(user_df.loc[r,c]).strip()
                 if val and val != "None" and val != "nan" and abs(float(val) - correct) < 0.1: 
                     score += 1
@@ -75,7 +74,6 @@ def render_math_quiz():
     
     main_col, right_col = st.columns([0.75, 0.25], gap="medium")
     
-    # Right Panel
     with right_col:
         render_palette(st.session_state['total_q'], st.session_state['current_q_index'])
         st.markdown("---")
@@ -84,9 +82,11 @@ def render_math_quiz():
             st.session_state['page'] = 'scorecard'
             st.rerun()
 
-    # Main Area
     with main_col:
         render_header("MATH")
+        # BRANDING: RahulBest
+        st.markdown("<h3 style='text-align: left; color: #444; border-left: 4px solid #f0ad4e; padding-left: 10px; margin-bottom: 20px;'>Maths by RahulBest</h3>", unsafe_allow_html=True)
+        
         current_idx = st.session_state['current_q_index']
         render_action_bar(current_idx, st.session_state['total_q'], "MATH")
         
@@ -117,7 +117,15 @@ def render_math_quiz():
 
 def render_math_scorecard():
     st.balloons()
-    st.title("📊 Math Scorecard")
+    
+    # BRANDING: Nitin Sharma
+    st.markdown("""
+        <div style='text-align:center; margin-bottom: 20px;'>
+            <h1 style='color:#333;'>Scorecard by Nitin Sharma</h1>
+            <p style='color:#666;'>Detailed Math Analysis</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
     ws = st.session_state['worksheet']
     duration = round(st.session_state['end_time'] - st.session_state['start_time'], 2)
     
