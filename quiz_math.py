@@ -38,11 +38,14 @@ def format_detailed_solution(label, r, c, val, correct, op):
     """Generates the detailed step-by-step logic."""
     step = ""
     try:
-        r_val = float(r) if r != 'Total' else 0
-        c_val = float(c) if c != 'Total' else 0
-        
         if op == 'mult' or op == 'df':
-            step = f"{r} × {c} = {correct}"
+             try:
+                 ri = int(float(r))
+                 ci = int(float(c))
+                 # Vedic/Mental split strategy: 12 * 13 = 12 * (10 + 3)
+                 step = f"{ri} × {ci} = {ri}×({ci//10*10} + {ci%10}) = {ri*(ci//10*10)} + {ri*(ci%10)} = {correct}"
+             except:
+                 step = f"{r} × {c} = {correct}"
         elif op == 'div':
             step = f"{r} ÷ {c} = {correct}"
         elif op == 'sub':
@@ -51,9 +54,8 @@ def format_detailed_solution(label, r, c, val, correct, op):
             if r != 'Total' and c != 'Total':
                 step = f"{r} + {c} = {correct}"
             else:
-                step = f"Sum of Row/Column for {r}/{c} = {correct}"
+                step = f"Sum logic for {r}/{c} = {correct}"
         elif op == 'succ':
-             # This is handled specifically in the grade loop for clarity
              pass
     except:
         step = "Calculation error"
@@ -62,7 +64,7 @@ def format_detailed_solution(label, r, c, val, correct, op):
     <div class='solution-box'>
         <span class='solution-header'>{label} [Row: {r}, Col: {c}]</span><br>
         Your Answer: <b>{val}</b> | Correct Answer: <b style='color:green'>{correct}</b><br>
-        <span style='color:#555; font-style:italic;'>Logic: {step}</span>
+        <span style='color:#555; font-style:italic;'>Step-by-step: {step}</span>
     </div>
     """
 
@@ -74,15 +76,13 @@ def grade_math(user_df, op, label, h=None):
 
     for r in user_df.index:
         for c in user_df.columns:
-            # Skip irrelevant columns for successive percentage
             if op=='succ' and 'crement' not in c: continue
             
             total += 1
             correct = 0
-            step_desc = "" # For detailed solution
+            step_desc = "" 
             
             try:
-                # Calculate correct answer based on type
                 if op in ['mult','df'] and label=='Table Practice (16-19)': 
                     correct = float(r)*float(c)
                 elif label=='Hard Grid Multiplication': 
@@ -114,7 +114,6 @@ def grade_math(user_df, op, label, h=None):
                     correct = round(100*factor, 2)
                     step_desc = " -> ".join(steps_log) + f" = {correct}%"
 
-                # Check User Answer
                 val = str(user_df.loc[r,c]).strip()
                 is_correct = False
                 if val and val != "None" and val != "nan":
@@ -126,7 +125,6 @@ def grade_math(user_df, op, label, h=None):
                 if is_correct: 
                     score += 1
                 else: 
-                    # --- DETAILED SOLUTION GENERATION ---
                     if op == 'succ':
                         sol_html = f"""
                         <div class='solution-box'>
@@ -145,7 +143,6 @@ def grade_math(user_df, op, label, h=None):
     return score, total, solutions_text
 
 def render_math_quiz():
-    # Theme is applied via render_header inside main logic or here for safety
     inject_custom_css()
     init_math_worksheet()
     
@@ -190,7 +187,7 @@ def render_math_quiz():
         st.session_state['answers_store'][d_key] = edited
 
 def render_math_scorecard():
-    inject_custom_css() # Safety check for theme
+    inject_custom_css()
     st.balloons()
     
     st.markdown("""
@@ -241,12 +238,11 @@ def render_math_scorecard():
             user_score = s_total
             topper_score = quiz_scores['Total'].max()
             
-            # --- FIXED PLOT CONTRAST ---
             fig = px.histogram(quiz_scores, x="Total", nbins=15, title="Score Distribution")
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', 
                 plot_bgcolor='rgba(0,0,0,0)',
-                font={'color': 'black'}, # Force black text on charts
+                font={'color': 'black'},
                 xaxis=dict(showgrid=False),
                 yaxis=dict(showgrid=False)
             )
