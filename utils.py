@@ -5,7 +5,7 @@ import hashlib
 import random
 import string
 
-# --- CORE UTILITIES (No internal imports to prevent circular dependencies) ---
+# --- CORE UTILITIES ---
 
 def get_ist():
     """Returns current date and time in IST."""
@@ -22,6 +22,13 @@ def reset_module_state():
     st.session_state['current_q_index'] = 0
     st.session_state['answers_store'] = {}
 
+def gen_captcha():
+    """Generates a simple math captcha (Question, Answer)."""
+    # FIX 1: Return a tuple (Question String, Answer Int) to match auth.py unpacking logic
+    a = random.randint(1, 9)
+    b = random.randint(1, 9)
+    return f"{a} + {b}", a + b
+
 def init_session_state():
     """Initialize base session state variables if they don't exist."""
     defaults = {
@@ -29,15 +36,23 @@ def init_session_state():
         'authenticated': False,
         'name': '',
         'mobile': '',
-        'user': '',
+        # FIX 2: Set user to None (not '') so main.py correctly detects unauthenticated state
+        'user': None, 
         'worksheet': None,
         'q_status': {},
         'current_q_index': 0,
         'answers_store': {}
     }
+    
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+
+    # FIX 3: Initialize captcha variables to prevent KeyError in auth.py on first load
+    if 'captcha_q' not in st.session_state:
+        q, a = gen_captcha()
+        st.session_state['captcha_q'] = q
+        st.session_state['captcha_a'] = a
 
 def hash_pass(password):
     """Hashes a password using SHA256."""
@@ -47,13 +62,6 @@ def gen_key():
     """Generates a random session key."""
     return ''.join(random.choices(string.ascii_letters + string.digits, k=16))
 
-def gen_captcha():
-    """Generates a simple numeric captcha code."""
-    return ''.join(random.choices(string.digits, k=5))
-
 def inject_custom_css():
-    """
-    Placeholder for backward compatibility. 
-    Actual CSS logic is now handled in ui_components.py to avoid circular imports.
-    """
+    """Placeholder for backward compatibility."""
     pass
