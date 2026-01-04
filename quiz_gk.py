@@ -47,7 +47,9 @@ def render_gk_quiz():
             st.rerun()
             
     with main_col:
+        # This function injects the JS Timer you referenced
         render_header("GK")
+        
         # BRANDING: Anil Yadav
         st.markdown("""
         <div style='background-color: #f9f9f9; padding: 10px; border-radius: 5px; border-left: 4px solid #5cb85c; margin-bottom: 20px;'>
@@ -79,7 +81,6 @@ def render_gk_quiz():
 def render_gk_scorecard():
     st.balloons()
     
-    # BRANDING: Nitin Sharma
     st.markdown("""
         <div style='text-align:center; margin-bottom: 20px;'>
             <h1 style='color:#333;'>Scorecard by Nitin Sharma</h1>
@@ -87,9 +88,22 @@ def render_gk_scorecard():
         </div>
     """, unsafe_allow_html=True)
 
-    duration = round(st.session_state['end_time'] - st.session_state['start_time'], 2)
+    # FIX: Safe duration calculation to prevent KeyError
+    # This ensures it doesn't crash if 'end_time' or 'start_time' are missing
+    end_t = st.session_state.get('end_time', time.time())
+    start_t = st.session_state.get('start_time', end_t)
+    duration = round(end_t - start_t, 2)
     
     score = 0
+    # FIX: Safety check for gk_q existence
+    if 'gk_q' not in st.session_state:
+        st.error("No quiz data found.")
+        if st.button("Back to Dashboard"):
+            reset_module_state()
+            st.session_state['page'] = 'dashboard'
+            st.rerun()
+        return
+
     total = len(st.session_state['gk_q'])
     sols = []
     
@@ -167,4 +181,5 @@ def render_gk_scorecard():
     st.markdown("---")
     if st.button("Back to Dashboard"):
         reset_module_state()
+        st.session_state['page'] = 'dashboard'
         st.rerun()
