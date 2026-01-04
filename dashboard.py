@@ -69,7 +69,8 @@ def render_dashboard():
             user_scores['Total'] = pd.to_numeric(user_scores['Total'], errors='coerce').fillna(0)
             user_scores['Date'] = pd.to_datetime(user_scores['Date'])
             
-            fig = px.line(user_scores, x='Date', y='Total', color='Quiz_ID', markers=True, 
+            # FIXED: Changed 'Quiz_ID' to 'Topic' to match your Google Sheet headers
+            fig = px.line(user_scores, x='Date', y='Total', color='Topic', markers=True, 
                           title="Your Score Progression over Time")
             st.plotly_chart(fig, use_container_width=True)
             
@@ -88,31 +89,41 @@ def render_dashboard():
     with tab2:
         # Percentile Calculation per Quiz Type
         latest_test = user_scores.iloc[-1]
-        quiz_id = latest_test['Quiz_ID']
         
-        # Get all scores for this specific quiz type
-        all_quiz_scores = df_scores[df_scores['Quiz_ID'] == quiz_id].copy()
-        all_quiz_scores['Total'] = pd.to_numeric(all_quiz_scores['Total'], errors='coerce').fillna(0)
-        
-        user_score = float(latest_test['Total'])
-        topper_score = all_quiz_scores['Total'].max()
-        
-        # Percentile Logic: (Number of people behind you / Total people) * 100
-        total_participants = len(all_quiz_scores)
-        participants_below = len(all_quiz_scores[all_quiz_scores['Total'] < user_score])
-        percentile = (participants_below / total_participants) * 100
-        
-        c1, c2 = st.columns([1, 2])
-        with c1:
-            st.markdown(f"### Latest Test: {quiz_id}")
-            st.metric("Your Score", user_score)
-            st.metric("Topper Score", topper_score)
-            st.metric("Percentile", f"{percentile:.1f}%")
-        
-        with c2:
-            # Histogram
-            fig2 = px.histogram(all_quiz_scores, x="Total", nbins=20, title="Score Distribution (Where do you stand?)")
-            # Add vertical line for user
-            fig2.add_vline(x=user_score, line_width=3, line_dash="dash", line_color="green", annotation_text="You")
-            fig2.add_vline(x=topper_score, line_width=3, line_dash="dash", line_color="red", annotation_text="Topper")
-            st.plotly_chart(fig2, use_container_width=True)
+        # FIXED: Changed 'Quiz_ID' to 'Topic'
+        # Handle case where Topic might be missing
+        if 'Topic' in latest_test:
+            quiz_id = latest_test['Topic']
+            
+            # Get all scores for this specific quiz type
+            # FIXED: Changed 'Quiz_ID' to 'Topic'
+            all_quiz_scores = df_scores[df_scores['Topic'] == quiz_id].copy()
+            all_quiz_scores['Total'] = pd.to_numeric(all_quiz_scores['Total'], errors='coerce').fillna(0)
+            
+            user_score = float(latest_test['Total'])
+            topper_score = all_quiz_scores['Total'].max()
+            
+            # Percentile Logic: (Number of people behind you / Total people) * 100
+            total_participants = len(all_quiz_scores)
+            if total_participants > 0:
+                participants_below = len(all_quiz_scores[all_quiz_scores['Total'] < user_score])
+                percentile = (participants_below / total_participants) * 100
+            else:
+                percentile = 100.0
+            
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                st.markdown(f"### Latest Test: {quiz_id}")
+                st.metric("Your Score", user_score)
+                st.metric("Topper Score", topper_score)
+                st.metric("Percentile", f"{percentile:.1f}%")
+            
+            with c2:
+                # Histogram
+                fig2 = px.histogram(all_quiz_scores, x="Total", nbins=20, title="Score Distribution (Where do you stand?)")
+                # Add vertical line for user
+                fig2.add_vline(x=user_score, line_width=3, line_dash="dash", line_color="green", annotation_text="You")
+                fig2.add_vline(x=topper_score, line_width=3, line_dash="dash", line_color="red", annotation_text="Topper")
+                st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.warning("Could not determine quiz topic from data.")
