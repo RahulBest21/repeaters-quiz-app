@@ -2,7 +2,8 @@ import streamlit as st
 import time
 from database import get_data
 from utils import save_to_sheet, get_ist, reset_module_state
-from modules.ui_components import render_header, render_palette, render_action_bar
+# CHANGED: Removed 'modules.' prefix
+from ui_components import render_header, render_palette, render_action_bar
 
 def setup_gk():
     with st.sidebar:
@@ -46,6 +47,15 @@ def render_gk_quiz():
             
     with main_col:
         render_header("GK")
+        # BRANDING: Anil Yadav
+        st.markdown("""
+        <div style='background-color: #f9f9f9; padding: 10px; border-radius: 5px; border-left: 4px solid #5cb85c; margin-bottom: 20px;'>
+            <small style='color: #666; font-style: italic; font-weight: 600;'>
+            Questions framed and solutions by anil yadav
+            </small>
+        </div>
+        """, unsafe_allow_html=True)
+
         current_idx = st.session_state['current_q_index']
         render_action_bar(current_idx, st.session_state['total_q'], "GK")
         
@@ -60,7 +70,6 @@ def render_gk_quiz():
         opts = [str(q_data[o]) for o in ['OptionA','OptionB','OptionC','OptionD']]
         existing = st.session_state['answers_store'].get(current_idx)
         
-        # Unique key is essential for radio state persistence
         sel = st.radio("Select Option:", opts, index=opts.index(existing) if existing in opts else None, key=f"radio_{current_idx}")
         
         if sel: 
@@ -68,7 +77,15 @@ def render_gk_quiz():
 
 def render_gk_scorecard():
     st.balloons()
-    st.title("📊 GK Scorecard")
+    
+    # BRANDING: Nitin Sharma
+    st.markdown("""
+        <div style='text-align:center; margin-bottom: 20px;'>
+            <h1 style='color:#333;'>Scorecard by Nitin Sharma</h1>
+            <p style='color:#666;'>General Knowledge Analysis</p>
+        </div>
+    """, unsafe_allow_html=True)
+
     duration = round(st.session_state['end_time'] - st.session_state['start_time'], 2)
     
     score = 0
