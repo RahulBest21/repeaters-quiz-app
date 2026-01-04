@@ -4,7 +4,7 @@ import time
 def _inject_css():
     """
     Injects internal CSS for styling. 
-    Includes a session state check to prevent redundant re-rendering (fixing the white screen/hang loop).
+    Includes a session state check to prevent redundant re-rendering.
     """
     if "css_injected" in st.session_state:
         return
@@ -45,6 +45,8 @@ def _inject_css():
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .test-title {
             font-size: 1.4rem;
@@ -52,6 +54,13 @@ def _inject_css():
             color: #343a40 !important;
             letter-spacing: -0.5px;
         }
+        
+        /* Timer Group */
+        .timer-group {
+            display: flex;
+            gap: 10px;
+        }
+
         .timer-badge {
             background: #fff3cd;
             color: #856404 !important;
@@ -63,6 +72,21 @@ def _inject_css():
             display: flex;
             align-items: center;
             gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .clock-badge {
+            background: #e2e3e5;
+            color: #383d41 !important;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-family: 'Roboto Mono', monospace;
+            border: 1px solid #d6d8db;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
         }
 
         /* 2. Palette Container */
@@ -144,38 +168,70 @@ def render_header(module_name):
     _inject_css() # Apply styles robustly
     start_ts = st.session_state.get('start_time', time.time())
     
-    # HTML Header
+    # HTML Header with JS Timer
     st.markdown(f"""
     <div class='test-header'>
         <div class='test-title'>CGL 2025 Live Mock • {module_name}</div>
-        <div class='timer-badge'>
-            <span>⏳</span> <span id='timer_val'>00:00</span>
+        <div class='timer-group'>
+            <div class='clock-badge' title='Current Time'>
+                <span>🕒</span> <span id='clock_val'>--:--:--</span>
+            </div>
+            <div class='timer-badge' title='Time Elapsed'>
+                <span>⏳</span> <span id='timer_val'>00:00</span>
+            </div>
         </div>
     </div>
     <script>
-    // Simple, non-blocking timer script
-    function updateTimer() {{
+    function updateTimers() {{
+        // 1. Update Elapsed Timer
         var now = Math.floor(Date.now() / 1000);
         var start = {start_ts};
         var diff = now - start;
+        
         var m = Math.floor(diff / 60);
         var s = diff % 60;
         
         if(m < 10) m = '0' + m;
         if(s < 10) s = '0' + s;
         
+        var timerString = m + ':' + s;
+        
+        // 2. Update Clock
+        var date = new Date();
+        var h_c = date.getHours();
+        var m_c = date.getMinutes();
+        var s_c = date.getSeconds();
+        var ampm = h_c >= 12 ? 'PM' : 'AM';
+        h_c = h_c % 12;
+        h_c = h_c ? h_c : 12; // the hour '0' should be '12'
+        if(m_c < 10) m_c = '0' + m_c;
+        if(s_c < 10) s_c = '0' + s_c;
+        
+        var clockString = h_c + ':' + m_c + ':' + s_c + ' ' + ampm;
+
+        // Apply to elements (Handle Streamlit iframe nesting)
         var timerEl = document.getElementById('timer_val');
+        var clockEl = document.getElementById('clock_val');
+        
         if(timerEl) {{
-            timerEl.innerHTML = m + ':' + s;
+            timerEl.innerHTML = timerString;
+            clockEl.innerHTML = clockString;
         }} else if (window.parent) {{
-            // Fallback for iframe/Streamlit structure
             try {{
-                var parentEl = window.parent.document.getElementById('timer_val');
-                if(parentEl) parentEl.innerHTML = m + ':' + s;
+                var parentTimer = window.parent.document.getElementById('timer_val');
+                var parentClock = window.parent.document.getElementById('clock_val');
+                if(parentTimer) parentTimer.innerHTML = timerString;
+                if(parentClock) parentClock.innerHTML = clockString;
             }} catch(e) {{}}
         }}
     }}
-    setInterval(updateTimer, 1000);
+    
+    // Clear any existing intervals to prevent duplicates if re-running
+    if (window.myTimerInterval) clearInterval(window.myTimerInterval);
+    window.myTimerInterval = setInterval(updateTimers, 1000);
+    
+    // Run immediately once
+    updateTimers();
     </script>
     """, unsafe_allow_html=True)
 
@@ -244,7 +300,8 @@ def render_action_bar(current_idx, total_q, module_type):
             if module_type == 'GK':
                 if st.session_state['answers_store'].get(current_idx): is_answered = True
             elif module_type == 'MATH':
-                 is_answered = True # Math is always considered visited/answered if viewed due to auto-save nature of data editor, or strict logic can be added
+                 is_answered = True # Math is always considered visited/answered if viewed due to auto-save nature of data editor
+                 # Note: Ideally, you could check if the dataframe in answers_store is non-empty/modified here if required.
 
             st.session_state['q_status'][current_idx] = 'answered' if is_answered else 'not_answered'
             
