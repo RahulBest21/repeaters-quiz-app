@@ -1,59 +1,136 @@
 import streamlit as st
-from utils import inject_custom_css
+from datetime import datetime
+import pytz
+import hashlib
+import random
+import string
 
-def render_header(title):
+# --- FIX: REMOVED "from utils import inject_custom_css" (Self-Import Error) ---
+
+def get_ist():
+    ist = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(ist)
+    return now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S")
+
+def reset_module_state():
+    keys_to_reset = ['worksheet', 'start_time', 'end_time', 'q_status', 'total_q', 'current_q_index', 'answers_store', 'saved']
+    for k in keys_to_reset:
+        if k in st.session_state:
+            del st.session_state[k]
+    st.session_state['current_q_index'] = 0
+    st.session_state['answers_store'] = {}
+
+def init_session_state():
+    """Initialize session state variables if they don't exist."""
+    defaults = {
+        'page': 'login',
+        'authenticated': False,
+        'name': '',
+        'mobile': '',
+        'user': '',
+        'worksheet': None,
+        'q_status': {},
+        'current_q_index': 0,
+        'answers_store': {}
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
+def hash_pass(password):
+    """Hashes a password using SHA256."""
+    return hashlib.sha256(str(password).encode()).hexdigest()
+
+def gen_key():
+    """Generates a random session key."""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+
+def gen_captcha():
+    """Generates a simple numeric captcha code."""
+    return ''.join(random.choices(string.digits, k=5))
+
+def inject_custom_css():
     """
-    Renders the consistent header for the application.
-    Injects the global CSS theme to ensure Day Mode is active on every page.
+    Injects global CSS to enforce Day Mode and high contrast 
+    across the entire application.
     """
-    inject_custom_css()  # <--- FIX: Applies theme to every page using this header
-    
-    st.markdown(f"""
-    <div style="background-color:#ffffff; padding:10px; border-bottom: 2px solid #f0f0f0; margin-bottom: 20px;">
-        <h1 style="color:#000000; margin:0; font-size: 2rem;">{title}</h1>
-    </div>
+    st.markdown("""
+        <style>
+            /* 1. Global Background & Text */
+            .stApp {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            
+            /* 2. Sidebar */
+            [data-testid="stSidebar"] {
+                background-color: #f8f9fa !important;
+                border-right: 1px solid #e0e0e0;
+            }
+            [data-testid="stSidebar"] * {
+                color: #000000 !important;
+            }
+
+            /* 3. Inputs (Text, Number, Date) */
+            input, textarea, select, .stTextInput > div > div > input, .stNumberInput > div > div > input {
+                color: #000000 !important;
+                background-color: #ffffff !important;
+                border: 1px solid #cccccc !important;
+            }
+            /* Input Labels */
+            label, .stTextInput label, .stNumberInput label {
+                color: #222222 !important;
+                font-weight: 600 !important;
+            }
+
+            /* 4. DataFrames & Tables */
+            div[data-testid="stDataFrame"], div[data-testid="stDataEditor"] {
+                background-color: #ffffff !important;
+                border: 1px solid #e0e0e0;
+            }
+            div[data-testid="stDataFrame"] *, div[data-testid="stDataEditor"] * {
+                color: #000000 !important;
+                background-color: #ffffff !important;
+            }
+
+            /* 5. Headers & Markdown */
+            h1, h2, h3, h4, h5, h6, p, li, span {
+                color: #000000 !important;
+            }
+            
+            /* 6. Metrics */
+            [data-testid="stMetricValue"] {
+                color: #000000 !important;
+            }
+            [data-testid="stMetricLabel"] {
+                color: #555555 !important;
+            }
+
+            /* 7. Buttons */
+            button[kind="primary"] {
+                background-color: #ff4b4b !important;
+                color: white !important;
+                border: none;
+            }
+            button[kind="secondary"] {
+                background-color: white !important;
+                color: #000000 !important;
+                border: 1px solid #cccccc !important;
+            }
+            
+            /* 8. Solution Box for Quiz */
+            .solution-box {
+                background-color: #f8f9fa;
+                color: #000000 !important;
+                border-left: 5px solid #007bff;
+                padding: 10px;
+                margin-bottom: 8px;
+                border-radius: 4px;
+                font-family: monospace;
+            }
+            .solution-header {
+                font-weight: bold;
+                color: #0056b3 !important;
+            }
+        </style>
     """, unsafe_allow_html=True)
-
-def render_palette(total_q, current_idx):
-    st.markdown("#### Question Palette")
-    cols = st.columns(4)
-    q_status = st.session_state.get('q_status', {})
-    
-    for i in range(total_q):
-        status = q_status.get(i, 'not_visited')
-        color = "#e0e0e0" # Default grey
-        text_color = "black"
-        
-        if i == current_idx:
-            color = "#007bff" # Blue for current
-            text_color = "white"
-        elif status == 'answered':
-            color = "#28a745" # Green
-            text_color = "white"
-        elif status == 'not_answered':
-            color = "#dc3545" # Red
-            text_color = "white"
-            
-        if cols[i % 4].button(str(i+1), key=f"q_nav_{i}", help=f"Go to Q{i+1}"):
-            st.session_state['current_q_index'] = i
-            st.rerun()
-            
-        # Styling hack for buttons isn't perfect in Streamlit, 
-        # so we rely on the state update above.
-        # This is a visual indicator using markdown if buttons fail to style
-        pass
-
-def render_action_bar(current_idx, total_q, module_name):
-    c1, c2, c3 = st.columns([1, 2, 1])
-    
-    with c1:
-        if current_idx > 0:
-            if st.button("⬅️ Previous"):
-                st.session_state['current_q_index'] -= 1
-                st.rerun()
-                
-    with c3:
-        if current_idx < total_q - 1:
-            if st.button("Next ➡️"):
-                st.session_state['current_q_index'] += 1
-                st.rerun()
