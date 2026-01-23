@@ -23,7 +23,8 @@ def get_data(worksheet_name):
                 raw_data = client.open("Repeaters_Database").worksheet(worksheet_name).get_all_values()
                 if len(raw_data) > 1: 
                     df = pd.DataFrame(raw_data[1:], columns=raw_data[0])
-                    
+                    df = df.loc[:, df.columns != '']
+
                     # FIX: Filter out empty rows (ghost rows) first
                     # We check if 'Username' or 'Total' is effectively empty
                     if 'Username' in df.columns:
@@ -68,3 +69,4 @@ def update_password(username, new_pass):
         sheet.update_cell(cell.row, 2, new_pass)
         return True
     except: return False
+
